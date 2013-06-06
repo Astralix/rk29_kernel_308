@@ -49,10 +49,13 @@ int rk29_battery_dbg_level = 0;
 
 module_param_named(dbg_level, rk29_battery_dbg_level, int, 0644);
 
-/*******************���²�������޸�******************************/
-#define	 TIMER_MS_COUNTS				50	/**< ADC sample period, base time for work queue. */
-//���²�����Ҫ���ʵ�ʲ��Ե���
-#define SLOPE_SECOND_COUNTS	            15	/**< Loop time for update of averaged voltage value. */
+/******************* Battery Monitoring Timer/Filter Setup ******************************/
+
+/**< ADC sample period, base time for work queue. */
+#define	 TIMER_MS_COUNTS				50
+
+/**< Loop time for update of averaged voltage value. */
+#define SLOPE_SECOND_COUNTS	            15
 
 /* AX: Timeout value calculation per percent.
  * Number of seconds the voltage has to be higher / lower than the last measured volt value before
@@ -74,12 +77,12 @@ module_param_named(dbg_level, rk29_battery_dbg_level, int, 0644);
 #define NUM_VOLTAGE_SAMPLE	            ((SLOPE_SECOND_COUNTS * 1000) / TIMER_MS_COUNTS)		// AX: 300
 
 /* AX: Convert seconds to 'ticks' counted in TIMER_MS_COUNTS */
-#define NUM_DISCHARGE_MIN_SAMPLE	    ((DISCHARGE_MIN_SECOND * 1000) / TIMER_MS_COUNTS)		// AX: 1400
-#define NUM_CHARGE_MIN_SAMPLE	        ((CHARGE_MIN_SECOND * 1000) / TIMER_MS_COUNTS)	    	// AX: 900
-#define NUM_CHARGE_MID_SAMPLE	        ((CHARGE_MID_SECOND * 1000) / TIMER_MS_COUNTS)	    	// AX: 1800
-#define NUM_CHARGE_MAX_SAMPLE	        ((CHARGE_MAX_SECOND * 1000) / TIMER_MS_COUNTS)	    	// AX: 5000
-#define NUM_CHARGE_FULL_DELAY_TIMES     ((CHARGE_FULL_DELAY_TIMES * 1000) / TIMER_MS_COUNTS)	// �����״̬����ʱ�䳤��
-#define NUM_USBCHARGE_IDENTIFY_TIMES    ((USBCHARGE_IDENTIFY_TIMES * 1000) / TIMER_MS_COUNTS)	// �����״̬����ʱ�䳤��
+#define NUM_DISCHARGE_MIN_SAMPLE(n)	    	((DISCHARGE_MIN_SECOND * 1000) / (TIMER_MS_COUNTS * n))		// AX: 1400
+#define NUM_CHARGE_MIN_SAMPLE(n)	        ((CHARGE_MIN_SECOND * 1000) / (TIMER_MS_COUNTS * n))    	// AX: 900
+#define NUM_CHARGE_MID_SAMPLE(n)	        ((CHARGE_MID_SECOND * 1000) / (TIMER_MS_COUNTS * n))    	// AX: 1800
+#define NUM_CHARGE_MAX_SAMPLE(n)	        ((CHARGE_MAX_SECOND * 1000) / (TIMER_MS_COUNTS * n))    	// AX: 5000
+#define NUM_CHARGE_FULL_DELAY_TIMES 	    ((CHARGE_FULL_DELAY_TIMES * 1000) / (TIMER_MS_COUNTS))	// �����״̬����ʱ�䳤��
+#define NUM_USBCHARGE_IDENTIFY_TIMES   		((USBCHARGE_IDENTIFY_TIMES * 1000) / (TIMER_MS_COUNTS))	// �����״̬����ʱ�䳤��
 
 /* AX: Modded this to be the indexes of the array now supplied by the board-*.c file */
 #define ADC_RESOLUTION			1024	/* 10-bit ADC type */
@@ -102,10 +105,12 @@ struct rk29_adc_battery_data
 	struct work_struct dcwakeup_work;
 	struct work_struct resume_work;
 
+	/**< Filled by board-*.c with battery dependent data */
 	struct rk29_adc_battery_platform_data *pdata;
 
-	int full_times;
+	int full_times;		/**< ?? Needed to init sampling ?? */
 
+	/**< Connection to ADC driver */
 	struct adc_client *client;
 	int adc_val;
 	int adc_samples[NUM_VOLTAGE_SAMPLE + 2];
@@ -114,11 +119,11 @@ struct rk29_adc_battery_data
 	int bat_status_cnt;
 	int bat_health;
 	int bat_present;
-	int bat_voltageNow;		/** Actual battery voltage in mV */
-	int bat_voltageAvg;		/** Average battery voltage in mV */
-	int bat_voltageMin;		/** Minimum battery voltage in mV */
-	int bat_voltageMax;		/** Maximum battery voltage in mV */
-	int bat_capacity;		/** Battery capacity in 0..100% */
+	int bat_voltageNow;		/**< Actual battery voltage in mV */
+	int bat_voltageAvg;		/**< Average battery voltage in mV */
+	int bat_voltageMin;		/**< Minimum battery voltage in mV */
+	int bat_voltageMax;		/**< Maximum battery voltage in mV */
+	int bat_capacity;		/**< Battery capacity in 0..100% */
 	int bat_change;
 };
 static struct rk29_adc_battery_data *gBatteryData;
@@ -247,6 +252,11 @@ static int rk29_adc_battery_get_charge_level(struct rk29_adc_battery_data *bat)
 	struct rk29_adc_battery_platform_data *pdata = bat->pdata;
 
 #if defined(CONFIG_BATTERY_RK29_AC_CHARGE)
+	/* AX: In this case the battery manager signals the presence of the
+	 * AC supply. It does not signal if it really charges.
+	 * It would make more sense to supply the charging information represented
+	 * by
+	 */
 	if (pdata->dc_det_pin != INVALID_GPIO)
 	{
 		if (gpio_get_value (pdata->dc_det_pin) == pdata->dc_det_level)
@@ -512,7 +522,7 @@ static int gBatCapacityChargeCnt = 0;
 static void rk29_adc_bat_capacity_charge(struct rk29_adc_battery_data *bat, int capacity)
 {
 	struct rk29_adc_battery_platform_data *pdata = bat->pdata;
-	int sampleEnd = NUM_CHARGE_MID_SAMPLE;
+	int sampleEnd = NUM_CHARGE_MID_SAMPLE(pdata->num_bat_series);
 
 	/* TODO: Astralix: Battery calibration can be automated by saving the value
 	 * at the point where charge_ok_pin flips.
@@ -522,10 +532,10 @@ static void rk29_adc_bat_capacity_charge(struct rk29_adc_battery_data *bat, int 
 	gBatCapacityChargeCnt++;
 
 	if ((pdata->charge_ok_pin != INVALID_GPIO)
-			&& (gpio_get_value(pdata->charge_ok_pin) == pdata->charge_ok_level))
+		&& (gpio_get_value(pdata->charge_ok_pin) == pdata->charge_ok_level))
 	{
 		/* This should fade capacity to 100% faster */
-		sampleEnd = NUM_CHARGE_MIN_SAMPLE;
+		sampleEnd = NUM_CHARGE_MIN_SAMPLE(pdata->num_bat_series);
 	}
 
 	if (gBatCapacityChargeCnt >= sampleEnd)
@@ -546,10 +556,12 @@ static void rk29_adc_bat_capacity_charge(struct rk29_adc_battery_data *bat, int 
 static void rk29_adc_bat_capacity_discharge(struct rk29_adc_battery_data *bat,
 		int capacity)
 {
+	struct rk29_adc_battery_platform_data *pdata = bat->pdata;
+
 	if (capacity < bat->bat_capacity)
 	{
 		/* We detected x cycles of measured capacity is lower */
-		if (++gBatCapacityDisChargeCnt >= NUM_DISCHARGE_MIN_SAMPLE)
+		if (++gBatCapacityDisChargeCnt >= NUM_DISCHARGE_MIN_SAMPLE(pdata->num_bat_series))
 		{
 			gBatCapacityDisChargeCnt = 0;
 			if (bat->bat_capacity > 0)
@@ -605,9 +617,8 @@ static void rk29_adc_battery_capacity_samples(struct rk29_adc_battery_data *bat)
 static int poweron_check = 0; /**< for exec p-on functions only once */
 static void rk29_adc_battery_poweron_capacity_check(void)
 {
-	int new_capacity, old_capacity;
-
-	new_capacity = gBatteryData->bat_capacity;
+	int new_capacity = gBatteryData->bat_capacity;
+	int old_capacity;
 
 	/* read previous capacity from filesystem */
 	old_capacity = rk29_adc_battery_load_capacity();
@@ -971,25 +982,36 @@ static int rk29_adc_battery_get_property(struct power_supply *psy,
 
 static enum power_supply_property rk29_adc_battery_props[] =
 {
+	POWER_SUPPLY_PROP_STATUS,
+	POWER_SUPPLY_PROP_HEALTH,
+	POWER_SUPPLY_PROP_PRESENT,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+	POWER_SUPPLY_PROP_VOLTAGE_AVG,
+	POWER_SUPPLY_PROP_VOLTAGE_MIN,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_TECHNOLOGY,
+	POWER_SUPPLY_PROP_CAPACITY,
+	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
+	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
+	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
+};
 
-		POWER_SUPPLY_PROP_STATUS, POWER_SUPPLY_PROP_HEALTH, POWER_SUPPLY_PROP_PRESENT,
-		POWER_SUPPLY_PROP_VOLTAGE_NOW, POWER_SUPPLY_PROP_VOLTAGE_AVG,
-		POWER_SUPPLY_PROP_VOLTAGE_MIN, POWER_SUPPLY_PROP_VOLTAGE_MAX,
-		POWER_SUPPLY_PROP_TECHNOLOGY,
-		POWER_SUPPLY_PROP_CAPACITY, POWER_SUPPLY_PROP_CAPACITY_LEVEL,
-		POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-		POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN, };
-
-static struct power_supply rk29_battery_supply =
-{ .name = "battery", .type = POWER_SUPPLY_TYPE_BATTERY,
-
-.get_property = rk29_adc_battery_get_property,
-
-.properties = rk29_adc_battery_props, .num_properties = ARRAY_SIZE(
-		rk29_adc_battery_props), };
+static struct power_supply rk29_battery_supply = {
+	.name = 		"battery",
+	.type = 		POWER_SUPPLY_TYPE_BATTERY,
+	.get_property = rk29_adc_battery_get_property,
+	.properties =	rk29_adc_battery_props,
+	.num_properties = ARRAY_SIZE( rk29_adc_battery_props),
+};
 
 #ifdef CONFIG_PM
+
 int suspend_capacity = 0;
+/** Wakeup after power management standby.
+ *
+ * This function needs to fill the measurement buffer first
+ * before the normal way of operation can be continued.
+ */
 static void rk29_adc_battery_resume_check(struct work_struct *work)
 {
 	int i;
@@ -1003,7 +1025,7 @@ static void rk29_adc_battery_resume_check(struct work_struct *work)
 	adc_sync_read(bat->client); //start adc sample
 	level = oldlevel = rk29_adc_battery_status_samples(bat);//init charge status
 
-	for (i = 0; i < NUM_VOLTAGE_SAMPLE; i++)//0.3 s
+	for (i = 0; i < NUM_VOLTAGE_SAMPLE; i++)	// 300 samples per s
 	{
 		mdelay(1);
 		rk29_adc_battery_voltage_samples(bat); //get voltage
@@ -1071,20 +1093,24 @@ static int rk29_adc_battery_io_init(struct rk29_adc_battery_data *data,
 		pdata->io_init();
 	}
 
-	//charge control pin
+	/* AX: Charge control pin to actively enable / disable
+	 * Charging. Not supported in Loox or Xpress but may be in others.
+	 */
 	if (pdata->charge_set_pin != INVALID_GPIO)
 	{
 		ret = gpio_request(pdata->charge_set_pin, NULL);
 		if (ret)
 		{
-			printk("failed to request dc_det gpio\n");
+			printk("failed to request charge_set gpio\n");
 			goto error;
 		}
 		gpio_direction_output(pdata->charge_set_pin,
 				1 - pdata->charge_set_level);
 	}
 
-	//dc charge detect pin
+	/* AX: Charge detect pin to detect if charging is applied.
+	 * Is set by AC charger, may be set by USB charging too.
+	 */
 	if (pdata->dc_det_pin != INVALID_GPIO)
 	{
 		ret = gpio_request(pdata->dc_det_pin, NULL);
@@ -1103,7 +1129,9 @@ static int rk29_adc_battery_io_init(struct rk29_adc_battery_data *data,
 		}
 	}
 
-	//charge ok detect
+	/* Charge ok detect: Is set when the charger hardware switches to standby
+	 * and the battery is full.
+	 */
 	if (pdata->charge_ok_pin != INVALID_GPIO)
 	{
 		ret = gpio_request(pdata->charge_ok_pin, NULL);
@@ -1186,6 +1214,11 @@ static void rk29_adc_battery_lowpower_check(struct rk29_adc_battery_data *bat)
 	}
 }
 
+/** ADC callback function
+ *
+ * This function is called by the ADC frontend driver everytime it has finished a conversion.
+ * The result of the conversion is passed in result.
+ */
 static void rk29_adc_battery_callback(struct adc_client *client, void *param,
 		int result)
 {
@@ -1193,6 +1226,11 @@ static void rk29_adc_battery_callback(struct adc_client *client, void *param,
 	return;
 }
 
+/** Battery Monitor Initialization.
+ *
+ * When this function is called the driver probes and installs the
+ * battery monitor driver.
+ */
 static int rk29_adc_battery_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -1300,11 +1338,16 @@ static int rk29_adc_battery_probe(struct platform_device *pdev)
 	power_supply_unregister(&rk29_ac_supply);
 #endif
 
-	err_battery_failed: power_supply_unregister(&rk29_battery_supply);
+err_battery_failed:
+	power_supply_unregister(&rk29_battery_supply);
 
-	err_dcirq_failed: free_irq(gpio_to_irq(pdata->dc_det_pin), data);
+err_dcirq_failed:
+	free_irq(gpio_to_irq(pdata->dc_det_pin), data);
 
-	err_adc_register_failed: err_io_init: err_data_alloc_failed: kfree(data);
+err_adc_register_failed:
+err_io_init:
+err_data_alloc_failed:
+	kfree(data);
 
 	printk("rk29_adc_battery: error!\n");
 

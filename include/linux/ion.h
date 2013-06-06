@@ -18,6 +18,7 @@
 #define _LINUX_ION_H
 
 #include <linux/types.h>
+#define ION_VERSION     "0.8"
 
 struct ion_handle;
 /**
@@ -36,6 +37,15 @@ enum ion_heap_type {
 	ION_HEAP_TYPE_CUSTOM, /* must be last so device specific heaps always
 				 are at the end of this enum */
 	ION_NUM_HEAPS,
+};
+
+enum ion_heap_ids {
+	ION_NOR_HEAP_ID = 0,
+	ION_CMA_HEAP_ID = 1,
+	
+	ION_VPU_ID = 16,
+	ION_CAM_ID = 17,
+	ION_UI_ID = 18,
 };
 
 #define ION_HEAP_SYSTEM_MASK		(1 << ION_HEAP_TYPE_SYSTEM)
