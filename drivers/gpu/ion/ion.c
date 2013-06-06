@@ -37,9 +37,17 @@
 #define DEBUG
 
 #ifdef DEBUG
+#warning "ASTRALIX says: Warning debug enabled"
+#endif
+
+#ifdef DEBUG
 #define DBG(...) printk(_VA_ARGS_)
 #else
 #define DBG(...)
+#endif
+
+#ifdef DEBUG
+#warning "ASTRALIX says: Warning debug enabled"
 #endif
 
 /**
