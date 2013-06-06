@@ -99,25 +99,25 @@
  * front is OV2655 at bus 1 address 0x60.
  *
  */
-#define CM9_KERNEL
+// #define CM9_KERNEL
 
 #ifdef CONFIG_VIDEO_RK29
 
 /*---------------- Camera Sensor Macro Define Begin  ------------------------*/
 /*---------------- Camera Sensor Configuration Macro Begin ------------------------*/
 #ifdef CONFIG_SOC_CAMERA_OV7675				/* front camera sensor */
-	#define CONFIG_SENSOR_1 					 RK29_CAM_SENSOR_OV7675
-	#define CONFIG_SENSOR_IIC_ADDR_1       		 0x42
-	#define CONFIG_SENSOR_ORIENTATION_1       	 270
-	#define CONFIG_SENSOR_IIC_ADAPTER_ID_1    	 1
-	#define CONFIG_SENSOR_POWER_PIN_1         	 INVALID_GPIO
-	#define CONFIG_SENSOR_RESET_PIN_1         	 INVALID_GPIO
-	#define CONFIG_SENSOR_POWERDN_PIN_1       	 RK29_PIN5_PD7
-	#define CONFIG_SENSOR_FALSH_PIN_1         	 INVALID_GPIO
-	#define CONFIG_SENSOR_POWERACTIVE_LEVEL_1 	 RK29_CAM_POWERACTIVE_L
-	#define CONFIG_SENSOR_RESETACTIVE_LEVEL_1 	 RK29_CAM_RESETACTIVE_L
+	#define CONFIG_SENSOR_1 					RK29_CAM_SENSOR_OV7675
+	#define CONFIG_SENSOR_IIC_ADDR_1       		0x42
+	#define CONFIG_SENSOR_ORIENTATION_1       	270
+	#define CONFIG_SENSOR_IIC_ADAPTER_ID_1    	1
+	#define CONFIG_SENSOR_POWER_PIN_1         	INVALID_GPIO
+	#define CONFIG_SENSOR_RESET_PIN_1         	INVALID_GPIO
+	#define CONFIG_SENSOR_POWERDN_PIN_1       	RK29_PIN5_PD7
+	#define CONFIG_SENSOR_FALSH_PIN_1         	INVALID_GPIO
+	#define CONFIG_SENSOR_POWERACTIVE_LEVEL_1 	RK29_CAM_POWERACTIVE_L
+	#define CONFIG_SENSOR_RESETACTIVE_LEVEL_1 	RK29_CAM_RESETACTIVE_L
 	#define CONFIG_SENSOR_POWERDNACTIVE_LEVEL_1 RK29_CAM_POWERDNACTIVE_H
-	#define CONFIG_SENSOR_FLASHACTIVE_LEVEL_1 	 RK29_CAM_FLASHACTIVE_L
+	#define CONFIG_SENSOR_FLASHACTIVE_LEVEL_1 	RK29_CAM_FLASHACTIVE_L
 
 	#define CONFIG_SENSOR_QCIF_FPS_FIXED_1      15000
 	#define CONFIG_SENSOR_QVGA_FPS_FIXED_1      15000
@@ -129,18 +129,18 @@
 #endif
 
 #ifdef CONFIG_SOC_CAMERA_OV2655				/* rear camera sensor */
-	#define CONFIG_SENSOR_0						 RK29_CAM_SENSOR_OV2655
-	#define CONFIG_SENSOR_IIC_ADDR_0       		 0x60
-	#define CONFIG_SENSOR_ORIENTATION_0       	 90
-	#define CONFIG_SENSOR_IIC_ADAPTER_ID_0    	 1
-	#define CONFIG_SENSOR_POWER_PIN_0         	 INVALID_GPIO
-	#define CONFIG_SENSOR_RESET_PIN_0         	 INVALID_GPIO
-	#define CONFIG_SENSOR_POWERDN_PIN_0       	 RK29_PIN6_PB7
-	#define CONFIG_SENSOR_FALSH_PIN_0         	 INVALID_GPIO
-	#define CONFIG_SENSOR_POWERACTIVE_LEVEL_0 	 RK29_CAM_POWERACTIVE_L
-	#define CONFIG_SENSOR_RESETACTIVE_LEVEL_0 	 RK29_CAM_RESETACTIVE_L
-	#define CONFIG_SENSOR_POWERDNACTIVE_LEVEL_0 RK29_CAM_POWERDNACTIVE_H
-	#define CONFIG_SENSOR_FLASHACTIVE_LEVEL_0 	 RK29_CAM_FLASHACTIVE_L
+	#define CONFIG_SENSOR_0						RK29_CAM_SENSOR_OV2655
+	#define CONFIG_SENSOR_IIC_ADDR_0       		0x60
+	#define CONFIG_SENSOR_ORIENTATION_0       	90
+	#define CONFIG_SENSOR_IIC_ADAPTER_ID_0    	1
+	#define CONFIG_SENSOR_POWER_PIN_0         	INVALID_GPIO
+	#define CONFIG_SENSOR_RESET_PIN_0         	INVALID_GPIO
+	#define CONFIG_SENSOR_POWERDN_PIN_0       	RK29_PIN6_PB7
+	#define CONFIG_SENSOR_FALSH_PIN_0         	INVALID_GPIO
+	#define CONFIG_SENSOR_POWERACTIVE_LEVEL_0 	RK29_CAM_POWERACTIVE_L
+	#define CONFIG_SENSOR_RESETACTIVE_LEVEL_0 	RK29_CAM_RESETACTIVE_L
+	#define CONFIG_SENSOR_POWERDNACTIVE_LEVEL_0	RK29_CAM_POWERDNACTIVE_H
+	#define CONFIG_SENSOR_FLASHACTIVE_LEVEL_0 	RK29_CAM_FLASHACTIVE_L
 
 	#define CONFIG_SENSOR_QCIF_FPS_FIXED_0      15000
 	#define CONFIG_SENSOR_QVGA_FPS_FIXED_0      15000
@@ -153,7 +153,7 @@
 /*---------------- Camera Sensor Configuration Macro End------------------------*/
 #include "../../../drivers/media/video/rk29_camera.c"
 /*---------------- Camera Sensor Macro Define End  ------------------------*/
-#endif  //#ifdef CONFIG_VIDEO_RK29
+#endif  /* CONFIG_VIDEO_RK29 */
 
 
 /* Set memory size of pmem */
@@ -184,7 +184,6 @@
 
 #if 0	/* Disabled by Astralix: far too much? */
 #define PMEM_GPU_SIZE       (128 * SZ_1M)
-#define PMEM_UI_SIZE        ( 74 * SZ_1M) /* 1280x800: 64M 1024x768: 48M ... */
 #define PMEM_VPU_SIZE       SZ_64M
 #define PMEM_SKYPE_SIZE     0
 #define PMEM_CAM_SIZE       PMEM_CAM_NECESSARY
@@ -194,9 +193,8 @@
 #else
 	#define MEM_CAMIPP_SIZE 0
 #endif
-#endif /* end of Astralix */
 
-
+#else /* of Astralix */
 #define PMEM_GPU_SIZE       SZ_64M
 #define PMEM_VPU_SIZE       SZ_64M
 #define PMEM_SKYPE_SIZE     0
@@ -206,6 +204,8 @@
 #define MEM_CAMIPP_SIZE     SZ_4M
 #else
 #define MEM_CAMIPP_SIZE     0
+#endif
+
 #endif
 
 #define MEM_FB_SIZE         (9*SZ_1M)
@@ -261,10 +261,10 @@ static int rk29_nand_io_init(void)
 }
 
 struct rk29_nand_platform_data rk29_nand_data = {
-    .width      = 1,     /* data bus width in bytes */
-    .hw_ecc     = 1,     /* hw ecc 0: soft ecc */
-    .num_flash    = 1,
-    .io_init   = rk29_nand_io_init,
+    .width		= 1,     /* data bus width in bytes */
+    .hw_ecc		= 1,     /* hw ecc 0: soft ecc */
+    .num_flash	= 1,
+    .io_init	= rk29_nand_io_init,
 };
 
 #define TOUCH_SCREEN_STANDBY_PIN          RK29_PIN6_PD1
@@ -282,7 +282,7 @@ struct rk29_nand_platform_data rk29_nand_data = {
 #define LCD_CLK_PIN          INVALID_GPIO
 #define LCD_CS_PIN           INVALID_GPIO
 /*****************************************************************************************
-* frame buffe  devices
+* frame buffer  devices
 * author: zyw@rock-chips.com
 *****************************************************************************************/
 #define FB_ID                       0
@@ -307,11 +307,11 @@ static int rk29_lcd_io_deinit(void)
 }
 
 static struct rk29lcd_info rk29_lcd_info = {
-    .txd_pin  = LCD_TXD_PIN,
-    .clk_pin = LCD_CLK_PIN,
-    .cs_pin = LCD_CS_PIN,
-    .io_init   = rk29_lcd_io_init,
-    .io_deinit = rk29_lcd_io_deinit,
+    .txd_pin	= LCD_TXD_PIN,
+    .clk_pin	= LCD_CLK_PIN,
+    .cs_pin		= LCD_CS_PIN,
+    .io_init	= rk29_lcd_io_init,
+    .io_deinit	= rk29_lcd_io_deinit,
 };
 
 int rk29_fb_io_enable(void)
@@ -424,37 +424,37 @@ static int rk29_fb_io_init(struct rk29_fb_setting_info *fb_setting)
 
 
 static struct rk29fb_info rk29_fb_info = {
-    .fb_id   = FB_ID,
-    .mcu_fmk_pin = FB_MCU_FMK_PIN,
-    .lcd_info = &rk29_lcd_info,
-    .io_init   = rk29_fb_io_init,
-    .io_enable = rk29_fb_io_enable,
-    .io_disable = rk29_fb_io_disable,
+    .fb_id			= FB_ID,
+    .mcu_fmk_pin	= FB_MCU_FMK_PIN,
+    .lcd_info	= &rk29_lcd_info,
+    .io_init	= rk29_fb_io_init,
+    .io_enable	= rk29_fb_io_enable,
+    .io_disable	= rk29_fb_io_disable,
 };
 
 /* rk29 fb resource */
 static struct resource rk29_fb_resource[] = {
 	[0] = {
-        .name  = "lcdc reg",
+        .name  = "lcdc reg",		/* LCD chipset memory mapped registers */
 		.start = RK29_LCDC_PHYS,
 		.end   = RK29_LCDC_PHYS + RK29_LCDC_SIZE - 1,
 		.flags = IORESOURCE_MEM,
 	},
 	[1] = {
-	    .name  = "lcdc irq",
+	    .name  = "lcdc irq",		/* LCD chipset interrupt descriptors */
 		.start = IRQ_LCDC,
 		.end   = IRQ_LCDC,
 		.flags = IORESOURCE_IRQ,
 	},
 	[2] = {
-	    .name   = "win1 buf",
+	    .name   = "win1 buf",		/* LCD frame buffer memory */
         .start  = MEM_FB_BASE,
         .end    = MEM_FB_BASE + MEM_FB_SIZE - 1,
         .flags  = IORESOURCE_MEM,
     },
     #ifdef CONFIG_FB_WORK_IPP
     [3] = {
-	    .name   = "win1 ipp buf",
+	    .name   = "win1 ipp buf",	/* LCD memory mapped registers */
         .start  = MEM_FBIPP_BASE,
         .end    = MEM_FBIPP_BASE + MEM_FBIPP_SIZE - 1,
         .flags  = IORESOURCE_MEM,
@@ -683,15 +683,15 @@ static int mma8452_init_platform_hw(void)
 }
 
 static struct mma8452_platform_data mma8452_info = {
-  .model= 8452,
-  //.swap_xy = 0,
-  .swap_xyz = 1,
-  .init_platform_hw = mma8452_init_platform_hw,
-  #ifdef CM9_KERNEL
-  .orientation = { 0,-1, 0,  -1, 0, 0,  0, 0,-1},
-  #else
-  .orientation = { 1, 0, 0,  0,-1, 0,  0, 0, 1},
-  #endif
+	.model= 8452,
+	//.swap_xy = 0,
+	.swap_xyz = 1,
+	.init_platform_hw = mma8452_init_platform_hw,
+	#if defined(CM9_KERNEL)
+	.orientation = { 0,-1, 0,  -1, 0, 0,  0, 0,-1},
+	#else
+	.orientation = { 1, 0, 0,  0,-1, 0,  0, 0, 1},
+	#endif
 };
 #endif
 
@@ -710,11 +710,12 @@ struct rk29_adc_battery_platform_data rk29_adc_battery_platdata = {
 	.charge_ok_level	= GPIO_HIGH,
 	.power_on_level		= GPIO_HIGH,
 
+	.num_bat_series		= 2,				/* Number of batteries in series */
 	.adc_vref			= 2500,				/* 2.500V Reference */
 	.adc_rset_high	 	= 300,				/* 300R Battery to ADC */
 	.adc_rset_low	 	= 100,				/* 100R ADC to GND */
 	.adc_raw_table_bat 	=					/* Values for 0..100% in steps of 10% */
-		{ 6618, 6825, 6946, 7024, 7077, 7164, 7307, 7475, 7648, 7864, 8313},
+		{ 6700, 6825, 6946, 7024, 7077, 7164, 7307, 7475, 7648, 7864, 8313},
 	.adc_raw_table_ac 	=					/* Same again but while charging */
 		{ 6868, 7075, 7196, 7274, 7327, 7414, 7557, 7725, 7898, 8114, 8563},
 	.adc_bat_levels		=
@@ -877,13 +878,6 @@ static struct i2c_board_info __initdata board_i2c0_devices[] = {
 	{
 		.type    		= "wm8900",
 		.addr           = 0x1A,
-		.flags			= 0,
-	},
-#endif
-#if defined (CONFIG_BATTERY_STC3100)
-	{
-		.type    		= "stc3100",
-		.addr           = 0x70,
 		.flags			= 0,
 	},
 #endif

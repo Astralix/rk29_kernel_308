@@ -181,6 +181,8 @@ struct rk29_adc_battery_platform_data {
     int charge_set_level;
     int power_on_level;
 
+    int num_bat_series;
+
     int adc_vref;
     int adc_rset_high;
     int adc_rset_low;

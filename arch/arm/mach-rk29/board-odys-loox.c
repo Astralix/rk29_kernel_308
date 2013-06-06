@@ -714,6 +714,7 @@ struct rk29_adc_battery_platform_data rk29_adc_battery_platdata = {
 	.dc_det_level    = GPIO_LOW,
 	.charge_ok_level = GPIO_HIGH,
 
+	.num_bat_series		= 1,				/* Number of batteries in series */
 	.adc_vref			= 3090,				/* 3.090V Reference */
 	.adc_rset_high	 	= 200,				/* 200R Battery to ADC */
 	.adc_rset_low	 	= 200,				/* 200R ADC to GND */
@@ -2504,22 +2505,11 @@ static int rk29sdk_wifi_bt_gpio_control_init(void)
     gpio_direction_output(RK29SDK_WIFI_GPIO_RESET_N,    GPIO_LOW);
     gpio_direction_output(RK29SDK_BT_GPIO_RESET_N,      GPIO_LOW);
 
-    #if defined(CONFIG_SDMMC1_RK29) && !defined(CONFIG_SDMMC_RK29_OLD)
-
-    rk29_mux_api_set(GPIO1C4_SDMMC1DATA1_NAME, GPIO1H_GPIO1C4);
-    gpio_request(RK29_PIN1_PC4, "mmc1-data1");
-    gpio_direction_output(RK29_PIN1_PC4,GPIO_LOW);//set mmc1-data1 to low.
-
-    rk29_mux_api_set(GPIO1C5_SDMMC1DATA2_NAME, GPIO1H_GPIO1C5);
-    gpio_request(RK29_PIN1_PC5, "mmc1-data2");
-    gpio_direction_output(RK29_PIN1_PC5,GPIO_LOW);//set mmc1-data2 to low.
-
-    rk29_mux_api_set(GPIO1C6_SDMMC1DATA3_NAME, GPIO1H_GPIO1C6);
-    gpio_request(RK29_PIN1_PC6, "mmc1-data3");
-    gpio_direction_output(RK29_PIN1_PC6,GPIO_LOW);//set mmc1-data3 to low.
-
+#if defined(CONFIG_SDMMC1_RK29)
+#warning "Astralix: Loox does not have SDMMC1 interface!"
+#endif
+    /* We preset SDMMC1 interface as GPIO. This may reduce leaking current */
     rk29_sdmmc_gpio_open(1, 0); //added by xbw at 2011-10-13
-    #endif
     pr_info("%s: init finished\n",__func__);
 
     return 0;
@@ -2527,37 +2517,29 @@ static int rk29sdk_wifi_bt_gpio_control_init(void)
 
 static int rk29sdk_wifi_power(int on)
 {
-        pr_info("%s: %d\n", __func__, on);
-        if (on){
-                gpio_set_value(RK29SDK_WIFI_BT_GPIO_POWER_N, GPIO_HIGH);
+	pr_info("%s: %d\n", __func__, on);
+	if (on)
+	{
+		gpio_set_value(RK29SDK_WIFI_BT_GPIO_POWER_N, GPIO_HIGH);
+		gpio_set_value(RK29SDK_WIFI_GPIO_RESET_N, GPIO_HIGH);
+		mdelay(100);
+		pr_info("wifi turn on power\n");
+	}
+	else
+	{
+		if (!rk29sdk_bt_power_state)
+		{
+			gpio_set_value(RK29SDK_WIFI_BT_GPIO_POWER_N, GPIO_LOW);
+			mdelay(100);
+			pr_info("wifi shut off power\n");
+		} else {
+			pr_info("wifi shouldn't shut off power, bt is using it!\n");
+		}
+		gpio_set_value(RK29SDK_WIFI_GPIO_RESET_N, GPIO_LOW);
+	}
 
-                #if defined(CONFIG_SDMMC1_RK29) && !defined(CONFIG_SDMMC_RK29_OLD)
-                rk29_sdmmc_gpio_open(1, 1); //added by xbw at 2011-10-13
-                #endif
-
-                gpio_set_value(RK29SDK_WIFI_GPIO_RESET_N, GPIO_HIGH);
-                mdelay(100);
-                pr_info("wifi turn on power\n");
-        }else{
-                if (!rk29sdk_bt_power_state){
-                        gpio_set_value(RK29SDK_WIFI_BT_GPIO_POWER_N, GPIO_LOW);
-
-                        #if defined(CONFIG_SDMMC1_RK29) && !defined(CONFIG_SDMMC_RK29_OLD)
-                        rk29_sdmmc_gpio_open(1, 0); //added by xbw at 2011-10-13
-                        #endif
-
-                        mdelay(100);
-                        pr_info("wifi shut off power\n");
-                }else
-                {
-                        pr_info("wifi shouldn't shut off power, bt is using it!\n");
-                }
-                gpio_set_value(RK29SDK_WIFI_GPIO_RESET_N, GPIO_LOW);
-
-        }
-
-        rk29sdk_wifi_power_state = on;
-        return 0;
+	rk29sdk_wifi_power_state = on;
+	return 0;
 }
 
 static int rk29sdk_wifi_reset_state;
@@ -2693,6 +2675,7 @@ static struct resource resources_gpu[] = {
         .flags  = IORESOURCE_IO,
     },
 };
+
 static struct platform_device rk29_device_gpu = {
     .name             = "galcore",
     .id               = 0,
@@ -3262,13 +3245,13 @@ static void __init machine_rk29_mapio(void)
 MACHINE_START(RK29, "RK29board")
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37))
 	/* UART for LL DEBUG */
-	.phys_io	= RK29_UART1_PHYS & 0xfff00000,
+	.phys_io		= RK29_UART1_PHYS & 0xfff00000,
 	.io_pg_offst	= ((RK29_UART1_BASE) >> 18) & 0xfffc,
 #endif
 	.boot_params	= RK29_SDRAM_PHYS + 0x88000,
-	.fixup		= machine_rk29_fixup,
-	.map_io		= machine_rk29_mapio,
-	.init_irq	= machine_rk29_init_irq,
+	.fixup			= machine_rk29_fixup,
+	.map_io			= machine_rk29_mapio,
+	.init_irq		= machine_rk29_init_irq,
 	.init_machine	= machine_rk29_board_init,
-	.timer		= &rk29_timer,
+	.timer			= &rk29_timer,
 MACHINE_END
